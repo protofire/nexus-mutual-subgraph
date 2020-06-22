@@ -1,0 +1,267 @@
+" Insured contract "
+type Contract @entity {
+  id: ID!
+  address: Bytes!
+
+  coverCount: BigInt!
+  stakeCount: BigInt!
+
+  addedAt: BigInt!
+  addedAtBlock: BigInt!
+  addedAtTransaction: Bytes!
+
+  covers: [Cover!]! @derivedFrom(field: "contract")
+  stakes: [Stake!]! @derivedFrom(field: "contract")
+}
+
+" Insured contract actions "
+interface InsuranceAction {
+  id: ID!
+  contract: Contract!
+  user: User!
+}
+
+enum CoverStatus {
+  ACTIVE
+  CLAIM_ACCEPTED
+  CLAIM_DENIED
+  COVER_EXPIRED
+  CLAIM_SUBMITTED
+  REQUESTED
+}
+
+type Cover implements InsuranceAction @entity {
+  id: ID!
+  contract: Contract!
+  address: Bytes!
+  amount: BigInt!
+  period: BigInt!
+
+  expires: BigInt!
+  premium: BigDecimal!
+  premiumNXM: BigDecimal!
+  status: CoverStatus!
+  user: User!
+
+  created: BigInt!
+
+  payouts: [Payout!] @derivedFrom(field: "cover")
+}
+
+enum ClaimStatus {
+  CA_VOTE
+  MEMBER_VOTE
+  ACCEPTED
+  DENIED
+}
+
+enum Verdict {
+  ACCEPTED
+  DENIED
+}
+
+type Claim @entity {
+  id: ID!
+  user: User!
+  cover: Cover!
+  submitDate: BigInt!
+  maxVotingTime: BigInt!
+  status: ClaimStatus!
+  statusLastUpdated: BigInt!
+  voteCount: BigInt!
+  verdict: Verdict
+
+  votes: [Vote!]! @derivedFrom(field: "claim")
+}
+
+type Vote @entity {
+  id: ID!
+  user: User!
+  claim: Claim!
+  verdict: Verdict!
+  submitDate: BigInt!
+}
+
+type Stake implements InsuranceAction @entity {
+  id: ID!
+  contract: Contract!
+  user: User!
+  stakedContractIndex: BigInt!
+  amount: BigDecimal!
+  unlockedAmount: BigDecimal!
+  burntAmount: BigDecimal!
+  created: BigInt!
+  expires: BigInt!
+}
+
+type Commission implements InsuranceAction @entity {
+  id: ID!
+  contract: Contract!
+  user: User!
+  stakedContractIndex: BigInt!
+  amount: BigDecimal!
+}
+
+type User @entity {
+  id: ID!
+  address: Bytes!
+  isMember: Boolean!
+  coverCount: BigInt!
+  stakeCount: BigInt!
+  claimCount: BigInt!
+  voteCount: BigInt!
+
+  addedAt: BigInt!
+  addedAtBlock: BigInt!
+  addedAtTransaction: Bytes!
+
+  claims: [Claim!]! @derivedFrom(field: "user")
+  covers: [Cover!]! @derivedFrom(field: "user")
+  stakes: [Stake!]! @derivedFrom(field: "user")
+  votes: [Vote!]! @derivedFrom(field: "user")
+}
+
+" Pool events "
+interface PoolEvent @entity {
+  id: ID!
+}
+
+type Payout implements PoolEvent @entity {
+  id: ID!
+  cover: Cover!
+  amount: BigInt!
+}
+
+type Rebalancing implements PoolEvent @entity {
+  id: ID!
+  currency: String!
+  amount: BigInt!
+}
+
+type Token @entity {
+  id: ID!
+
+  decimals: Int!
+  name: String!
+  symbol: String!
+
+  operator: Bytes!
+
+  eventCount: BigInt!
+  approvalEventCount: BigInt!
+  burnEventCount: BigInt!
+  mintEventCount: BigInt!
+  transferEventCount: BigInt!
+
+  totalSupply: BigDecimal!
+  totalBurned: BigDecimal!
+  totalMinted: BigDecimal!
+  totalTransferred: BigDecimal!
+
+  whitelist: [Bytes!]!
+
+  events: [TokenEvent!]! @derivedFrom(field: "token")
+}
+
+interface TokenEvent @entity {
+  id: ID!
+  token: Token!
+  account: Bytes!
+
+  block: BigInt!
+  timestamp: BigInt!
+  transaction: Bytes!
+}
+
+type ApprovalEvent implements TokenEvent @entity {
+  id: ID!
+  token: Token!
+  account: Bytes!
+  amount: BigDecimal!
+  spender: Bytes!
+
+  block: BigInt!
+  timestamp: BigInt!
+  transaction: Bytes!
+}
+
+type BurnEvent implements TokenEvent @entity {
+  id: ID!
+  token: Token!
+  account: Bytes!
+  amount: BigDecimal!
+
+  block: BigInt!
+  timestamp: BigInt!
+  transaction: Bytes!
+}
+
+type MintEvent implements TokenEvent @entity {
+  id: ID!
+  token: Token!
+  account: Bytes!
+  amount: BigDecimal!
+
+  block: BigInt!
+  timestamp: BigInt!
+  transaction: Bytes!
+}
+
+type TransferEvent implements TokenEvent @entity {
+  id: ID!
+  token: Token!
+  account: Bytes!
+  amount: BigDecimal!
+  from: Bytes!
+  to: Bytes!
+
+  block: BigInt!
+  timestamp: BigInt!
+  transaction: Bytes!
+}
+
+type BlackListedEvent implements TokenEvent @entity {
+  id: ID!
+  token: Token!
+  account: Bytes!
+
+  block: BigInt!
+  timestamp: BigInt!
+  transaction: Bytes!
+}
+
+type WhiteListedEvent implements TokenEvent @entity {
+  id: ID!
+  token: Token!
+  account: Bytes!
+
+  block: BigInt!
+  timestamp: BigInt!
+  transaction: Bytes!
+}
+
+# TODO: Import these types from @protofire/subgraph-toolkit
+interface Metric @entity {
+  id: ID!
+}
+
+type Accumulator implements Metric @entity {
+  id: ID!
+  total: BigDecimal!
+}
+
+type Counter implements Metric @entity {
+  id: ID!
+  count: BigInt!
+}
+
+type MCRData @entity {
+  id: ID!
+  block: BigInt!
+  date: BigInt!
+  currencies: [String!]!
+  rates: [BigInt!]!
+  mcrEtherx100: BigInt!
+  mcrPercx100: BigInt!
+  vFull: BigInt!
+}
